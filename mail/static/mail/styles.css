@@ -1,3 +1,70 @@
+:root {
+    --primary-light: #8abdff;
+    --primary: #6d5dfc;
+    --primary-dark: #5b0eeb;
+    
+    --white: #FFFFFF;
+    --greyLight-1: #E4EBF5;
+    --greyLight-2: #c8d0e7;
+    --greyLight-3: #bec8e4;
+    --greyDark: #9baacf;
+}
+
+html,body {
+    font-size: 1rem;
+}
+
 textarea {
     min-height: 400px;
+}
+
+div, table {
+    border-radius: 3rem;
+}
+
+.container{
+    box-shadow: inset 3px 3px 20px rgb(0 0 0 / 30%);
+    height:100vh;
+    width:100vw;
+    padding:50px;
+}
+
+#email-table_wrapper {
+    border-radius:3rem;
+    border: 1px solid gray;
+    padding: 1.5em;
+    box-shadow: 3px 3px 20px rgb(0 0 0 / 30%);
+    cursor: default;
+}
+
+#email-header > p {
+    line-height: normal;
+    margin: 0;
+}
+
+#email-body {
+    border-radius: 0px;
+    height: 100%;
+    overflow: hidden;
+}
+
+#emails-view, #compose-view{
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.7));
+    padding: 50px;
+    box-shadow: 0.8rem 0.8rem 1.4rem var(--greyLight-2), -0.2rem -0.2rem 1.8rem var(--white);
+}
+
+tr{
+    color:black;
+    font-weight:bold;
+}
+
+tr:hover, .read {
+    cursor:alias;
+    color: black;
+}
+
+.read {
+    font-weight:normal;
+    color:gray;
 }
