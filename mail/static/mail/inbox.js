@@ -58,26 +58,31 @@ function load_mailbox(mailbox) {
 
   fetch(`/emails/${mailbox}`)
   .then( response => response.json() )
-  .then( emails => {    
-    
-    // Clear the email list  
-    const tbody = document.querySelector("tbody");
-    tbody.innerHTML = ''
-    if(tbody.childNodes) tbody.childNodes.forEach(row => table.row(row).remove())
+  .then( emails => {
+    if (emails.error) {
+      createAlert(emails,$);
+    }
+    else {
+      // Clear the email list  
+      const tbody = document.querySelector("tbody");
+      tbody.innerHTML = ''
+      if(tbody.childNodes) tbody.childNodes.forEach(row => table.row(row).remove())
 
-      // Print emails
-      emails.forEach(email => {
-        let newRow = table.row.add([
-          email.sender,
-          email.subject,
-          email.timestamp
-        ]).draw().node();
+        // Print emails
+        emails.forEach( email => {
+          let newRow = table.row.add([
+            email.sender,
+            email.subject,
+            email.timestamp
+          ]).draw().node();
 
-        if (email.read) $(newRow).addClass('read')
+          if (email.read) $(newRow).addClass('read')
 
-        $(newRow).on('click', () => view_email(email, mailbox));
-    })
-  });
+          $(newRow).on('click', () => view_email(email, mailbox));
+      })
+    }
+  })
+  .catch(error => console.log(error));
 }
 
 function send_email(e) {
@@ -95,19 +100,9 @@ function send_email(e) {
         subject: subject,
         body: body
     })
-  }).then(response => {
-    // response.json();
-    console.log(response.json());
-    switch (response.status){
-      case 200:
-        createAlert(response.message)
-      break;
-      case 400:
-        createAlert(response.error)
-      break;
-    }
-    load_mailbox('sent')
-  })
+  }).then(response => response.json()
+  ).then(result => createAlert(result,$))
+  load_mailbox('sent');
 }
 
 // reply to email
@@ -117,8 +112,7 @@ function reply_email(email) {
   // Get value in input fields of compose view
   document.getElementById('compose-recipients').value = email.sender;
   document.getElementById('compose-subject').value = (email.subject.substring(0,4) === 'Re: ') ? email.subject : 'Re: ' + email.subject;
-  document.getElementById('compose-body').value = `On ${email.timestamp} ${email.sender} wrote:\n\"${email.body}\"`;
-
+  document.getElementById('compose-body').value = `\nOn ${email.timestamp} ${email.sender} wrote:\n\"${email.body}\"`;
 }
 
 // view email
@@ -147,11 +141,7 @@ function view_email(email, mailbox) {
   const replyBtn = document.querySelector('input[type="button"]')
   replyBtn.addEventListener('click',()=>reply_email(email));
 
-  archiveElmnt = document.getElementById("archive")
-  if ( archiveElmnt != null) {
-    // archiveElmnt.removeEventListener('click',() => archive_email(email))
-    archiveElmnt.remove();
-  }
+ 
 
   // if archive button does not exists create it only for 'inbox' and 'archive'
   if (mailbox == 'inbox' || mailbox == 'archive'){
@@ -173,23 +163,45 @@ function archive_email(email) {
   // if any previous archive button exists, delete it
   archiveElmnt = document.getElementById("archive");
   if ( archiveElmnt != null) {
-    // archiveElmnt.removeEventListener('click', () => archive_email(email));
     archiveElmnt.remove();
   }
   table.draw();
   load_mailbox('inbox');
 }
 
-function createAlert(message){
+function createAlert(message,$){
+
+  // retreive message object key
+  let key = Object.keys(message);
+  alertType =  key == "error" ? "danger" : "success"
+  
+  // create alert message container
   let alertElmnt = document.createElement('div');
+
   alertElmnt.setAttribute('id', 'alert');
-  alertElmnt.setAttribute('id', 'alert');
-  alertElmnt.className = 'alert-success'
-  alertElmnt.innerHTML = `<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a><strong>${message}</strong>`
-  document.querySelector('body').insertBefore(alertElmnt, this.firstChild);
+  alertElmnt.setAttribute('role','alert');
+  // set class according to bootstrap alert message type
+  alertElmnt.className = 'alert alert-' + alertType + ' alert-dismissable fade show';
+  alertElmnt.innerHTML = `<strong>${ message[key] }</strong>
+                          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                          <span aria-hidden="true">&times;</span>
+                          </button>`
+  const body = document.querySelector('body');
+  body.insertBefore(alertElmnt, body.firstChild);
+  window.setTimeout( () => {
+    $(".alert").fadeTo(350, 0).slideUp(500, function(){
+        $(this).remove(); 
+    });
+}, 2000);
 }
 
 function createArchiveBtn(email, btn, callback){
+
+  let archiveElmnt = document.getElementById("archive")
+  console.log(archiveElmnt);
+  if ( archiveElmnt != null) {
+    archiveElmnt.remove();
+  }
 
   let archiveBtn = document.createElement('input');
   let archived = email.archived ? 'Unarchive': 'Archive';
