@@ -2,15 +2,16 @@ var table;
 
 document.addEventListener('DOMContentLoaded', function() {
 
+  table = $('#email-table').DataTable();
   // Use buttons to toggle between views
   document.querySelector('#inbox').addEventListener('click', () => load_mailbox('inbox'));
   document.querySelector('#sent').addEventListener('click', () => load_mailbox('sent'));
   document.querySelector('#archived').addEventListener('click', () => load_mailbox('archive'));
   document.querySelector('#compose').addEventListener('click', compose_email);
   document.querySelector('input[type = "submit"]').addEventListener('click', send_email);
-
   // By default, load the inbox  
-  load_mailbox('inbox');  
+  load_mailbox('inbox');
+
 });
 
 function compose_email() {
@@ -27,8 +28,8 @@ function compose_email() {
 }
 
 function load_mailbox(mailbox) {
-  // slashIndex = document.baseURI.indexOf('/');
-  // document.baseURI = document.baseURI.substring(0,slashIndex);
+  table.clear().draw();
+
   // Show the mailbox and hide other views
   document.querySelector('#emails-view').style.display = 'block';
   document.querySelector('#email-view').style.display = 'none';
@@ -48,6 +49,7 @@ function load_mailbox(mailbox) {
     default:
       document.querySelector('#emails-view').className = 'bg-light';
   }
+
   // Show the mailbox name i.e. inbox, sent or archived
   document.querySelector('#emails-view').firstChild.remove();
   let viewTitle = document.createElement('h3');
@@ -56,14 +58,12 @@ function load_mailbox(mailbox) {
 
   fetch(`/emails/${mailbox}`)
   .then( response => response.json() )
-  .then(emails => {
-    // console.log(emails);
-    table = $('#email-table').DataTable();
+  .then( emails => {    
     
     // Clear the email list  
     const tbody = document.querySelector("tbody");
-    if(tbody.childNodes) tbody.childNodes.forEach(row => table.row(row).remove())
     tbody.innerHTML = ''
+    if(tbody.childNodes) tbody.childNodes.forEach(row => table.row(row).remove())
 
       // Print emails
       emails.forEach(email => {
@@ -81,7 +81,8 @@ function load_mailbox(mailbox) {
 }
 
 function send_email(e) {
-e.preventDefault()
+
+  e.preventDefault()
   // Get value in input fields of compose view
   let recipients = document.getElementById('compose-recipients').value
   let subject    = document.getElementById('compose-subject').value
@@ -95,14 +96,16 @@ e.preventDefault()
         body: body
     })
   }).then(response => {
-    response.json();
-  }).then(result => {
-    console.log(result);
-    let alertElmnt = document.createElement('div');
-    alertElmnt.setAttribute('id', 'alert');
-    alertElmnt.className = 'alert-success'
-    alertElmnt.innerHTML = `<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a><strong>${result.error}</strong>`
-    body.appendChild(alertElmnt);
+    // response.json();
+    console.log(response.json());
+    switch (response.status){
+      case 200:
+        createAlert(response.message)
+      break;
+      case 400:
+        createAlert(response.error)
+      break;
+    }
     load_mailbox('sent')
   })
 }
@@ -133,7 +136,7 @@ function view_email(email, mailbox) {
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#email-view').style.display = 'block';
   document.querySelector('#compose-view').style.display = 'none';
-  
+
   document.getElementById('emailFrom').innerHTML = '<strong>From: </strong>'+ email.recipients;
   document.getElementById('emailTo').innerHTML = '<strong>To: </strong>'+ email.sender;
   document.getElementById('emailSubject').innerHTML = '<strong>Subject: </strong>'+ email.subject;
@@ -146,29 +149,15 @@ function view_email(email, mailbox) {
 
   archiveElmnt = document.getElementById("archive")
   if ( archiveElmnt != null) {
-    archiveElmnt.removeEventListener('click',() => archive_email(email))
+    // archiveElmnt.removeEventListener('click',() => archive_email(email))
     archiveElmnt.remove();
   }
 
-  // if archive button does not exists create it only for 'inbox' or 'archive'
-  const archiveBtn = document.createElement('input');
-
+  // if archive button does not exists create it only for 'inbox' and 'archive'
   if (mailbox == 'inbox' || mailbox == 'archive'){
-
-    replyBtn.parentNode.insertBefore(archiveBtn, replyBtn.nextSibling);
-
-    archiveBtn.setAttribute("type", "button");
-    archiveBtn.setAttribute("id", "archive");
-    archiveBtn.className = "btn btn-sm btn-outline-primary"
-
-    const archived = email.archived ? 'Unarchive' : 'Archive'
-    archiveBtn.setAttribute('value', archived);
-
-    archiveBtn.addEventListener('click', () => archive_email(email));
+    createArchiveBtn(email, replyBtn, archive_email);
   }
 }
-
-
 
 // view email
 function archive_email(email) {
@@ -181,11 +170,35 @@ function archive_email(email) {
     })
   })
 
-
+  // if any previous archive button exists, delete it
   archiveElmnt = document.getElementById("archive");
   if ( archiveElmnt != null) {
-    archiveElmnt.removeEventListener('click', () => archive_email(email));
+    // archiveElmnt.removeEventListener('click', () => archive_email(email));
     archiveElmnt.remove();
   }
-    load_mailbox('inbox');
+  table.draw();
+  load_mailbox('inbox');
+}
+
+function createAlert(message){
+  let alertElmnt = document.createElement('div');
+  alertElmnt.setAttribute('id', 'alert');
+  alertElmnt.setAttribute('id', 'alert');
+  alertElmnt.className = 'alert-success'
+  alertElmnt.innerHTML = `<a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a><strong>${message}</strong>`
+  document.querySelector('body').insertBefore(alertElmnt, this.firstChild);
+}
+
+function createArchiveBtn(email, btn, callback){
+
+  let archiveBtn = document.createElement('input');
+  let archived = email.archived ? 'Unarchive': 'Archive';
+
+  archiveBtn.setAttribute("type", "button");
+  archiveBtn.setAttribute("id", "archive");
+  archiveBtn.className = "btn btn-sm btn-outline-primary"
+  
+  archiveBtn.setAttribute('value', archived);
+  btn.parentNode.insertBefore(archiveBtn, btn.nextSibling);
+  archiveBtn.addEventListener('click', () => callback(email));
 }
