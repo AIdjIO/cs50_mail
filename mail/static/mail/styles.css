@@ -25,6 +25,7 @@ textarea {
     width:100vw;
     padding:50px;
     overflow:auto;
+    border-radius:1.5rem;
 }
 
 .container::-webkit-scrollbar{
