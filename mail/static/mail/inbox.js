@@ -28,6 +28,11 @@ function compose_email() {
 
 function load_mailbox(mailbox) {
 
+    // Show the mailbox and hide other views
+    document.querySelector('#emails-view').style.display = 'block';
+    document.querySelector('#email-view').style.display = 'none';
+    document.querySelector('#compose-view').style.display = 'none';
+
   // Show the mailbox name i.e. inbox, sent or archived
   document.querySelector('#emails-view').firstChild.remove();
   let viewTitle = document.createElement('h3');
@@ -63,11 +68,6 @@ function load_mailbox(mailbox) {
     }
   })
   .catch(error => console.log(error));
-
-  // Show the mailbox and hide other views
-  document.querySelector('#emails-view').style.display = 'block';
-  document.querySelector('#email-view').style.display = 'none';
-  document.querySelector('#compose-view').style.display = 'none';
 
   // Apply different background color depending on 'inbox', 'sent' or 'archived'
   switch (mailbox) {
