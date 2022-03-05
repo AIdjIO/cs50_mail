@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function compose_email() {
-
   // Show compose view and hide other views
   document.querySelector('#emails-view').style.display = 'none';
   document.querySelector('#email-view').style.display = 'none';
@@ -28,7 +27,42 @@ function compose_email() {
 }
 
 function load_mailbox(mailbox) {
-  table.clear().draw();
+
+  // Show the mailbox name i.e. inbox, sent or archived
+  document.querySelector('#emails-view').firstChild.remove();
+  let viewTitle = document.createElement('h3');
+  viewTitle.innerText = `${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}`
+  document.querySelector('#emails-view').insertBefore(viewTitle, document.querySelector('#emails-view').firstChild);
+
+  fetch(`/emails/${mailbox}`)
+  .then( response => response.json() )
+  .then( emails => {
+    if (emails.error) {
+      createAlert(emails,$);
+    }
+    else {
+      // Clear the email list  
+      // const tbody = document.querySelector("tbody");
+      // tbody.innerHTML = ''
+      // if(tbody.childNodes) [...tbody.childNodes].forEach(row => table.row(row).remove())
+      table.clear();
+
+        // Print emails
+        emails.forEach( email => {
+          let newRow = table.row.add([
+            email.sender,
+            email.subject,
+            email.timestamp
+          ]).draw().node();
+
+          if (email.read) $(newRow).addClass('read')
+
+          $(newRow).on('click', () => view_email(email, mailbox));
+      })
+      table.draw();
+    }
+  })
+  .catch(error => console.log(error));
 
   // Show the mailbox and hide other views
   document.querySelector('#emails-view').style.display = 'block';
@@ -49,40 +83,7 @@ function load_mailbox(mailbox) {
     default:
       document.querySelector('#emails-view').className = 'bg-light';
   }
-
-  // Show the mailbox name i.e. inbox, sent or archived
-  document.querySelector('#emails-view').firstChild.remove();
-  let viewTitle = document.createElement('h3');
-  viewTitle.innerText = `${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}`
-  document.querySelector('#emails-view').insertBefore(viewTitle, document.querySelector('#emails-view').firstChild);
-
-  fetch(`/emails/${mailbox}`)
-  .then( response => response.json() )
-  .then( emails => {
-    if (emails.error) {
-      createAlert(emails,$);
-    }
-    else {
-      // Clear the email list  
-      const tbody = document.querySelector("tbody");
-      tbody.innerHTML = ''
-      if(tbody.childNodes) tbody.childNodes.forEach(row => table.row(row).remove())
-
-        // Print emails
-        emails.forEach( email => {
-          let newRow = table.row.add([
-            email.sender,
-            email.subject,
-            email.timestamp
-          ]).draw().node();
-
-          if (email.read) $(newRow).addClass('read')
-
-          $(newRow).on('click', () => view_email(email, mailbox));
-      })
-    }
-  })
-  .catch(error => console.log(error));
+  // table.clear().draw();
 }
 
 function send_email(e) {
@@ -101,8 +102,11 @@ function send_email(e) {
         body: body
     })
   }).then(response => response.json()
-  ).then(result => createAlert(result,$))
-  load_mailbox('sent');
+  ).then(result => {
+    createAlert(result,$);
+    load_mailbox('sent');
+  })
+
 }
 
 // reply to email
@@ -131,8 +135,8 @@ function view_email(email, mailbox) {
   document.querySelector('#email-view').style.display = 'block';
   document.querySelector('#compose-view').style.display = 'none';
 
-  document.getElementById('emailFrom').innerHTML = '<strong>From: </strong>'+ email.recipients;
-  document.getElementById('emailTo').innerHTML = '<strong>To: </strong>'+ email.sender;
+  document.getElementById('emailFrom').innerHTML = '<strong>From: </strong>'+ email.sender;
+  document.getElementById('emailTo').innerHTML = '<strong>To: </strong>'+ email.recipients;
   document.getElementById('emailSubject').innerHTML = '<strong>Subject: </strong>'+ email.subject;
   document.getElementById('emailTimestamp').innerHTML = '<strong>Timestamp: </strong> '+ email.timestamp;
   document.getElementById('email-body').innerText = ' '+ email.body;
@@ -141,12 +145,12 @@ function view_email(email, mailbox) {
   const replyBtn = document.querySelector('input[type="button"]')
   replyBtn.addEventListener('click',()=>reply_email(email));
 
- 
-
   // if archive button does not exists create it only for 'inbox' and 'archive'
   if (mailbox == 'inbox' || mailbox == 'archive'){
-    createArchiveBtn(email, replyBtn, archive_email);
+    let archiveBtn = createArchiveBtn(email, replyBtn);
+    archiveBtn.addEventListener('click', () => archive_email(email));
   }
+  table.draw();
 }
 
 // view email
@@ -158,16 +162,17 @@ function archive_email(email) {
     body: JSON.stringify({
         archived: !email.archived
     })
-  })
-
-  // if any previous archive button exists, delete it
-  archiveElmnt = document.getElementById("archive");
-  if ( archiveElmnt != null) {
-    archiveElmnt.remove();
-  }
-  table.draw();
-  load_mailbox('inbox');
+  }).then(()=>{
+    // if any previous archive button exists, delete it
+    archiveElmnt = document.getElementById("archive");
+    if ( archiveElmnt != null) {
+      archiveElmnt.remove();
+      }
+      load_mailbox('inbox');
+    })
 }
+
+
 
 function createAlert(message,$){
 
@@ -195,7 +200,7 @@ function createAlert(message,$){
 }, 2000);
 }
 
-function createArchiveBtn(email, btn, callback){
+function createArchiveBtn(email, btn){
 
   let archiveElmnt = document.getElementById("archive")
   console.log(archiveElmnt);
@@ -212,5 +217,5 @@ function createArchiveBtn(email, btn, callback){
   
   archiveBtn.setAttribute('value', archived);
   btn.parentNode.insertBefore(archiveBtn, btn.nextSibling);
-  archiveBtn.addEventListener('click', () => callback(email));
+  return archiveBtn;
 }

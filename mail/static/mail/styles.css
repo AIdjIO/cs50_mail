@@ -13,19 +13,24 @@
 html,body {
     font-size: 1rem;
     box-shadow: inset 3px 3px 20px rgb(0 0 0 / 30%);
+    backdrop-filter: blur(10px);
 }
+
 
 textarea {
     min-height: 400px;
 }
 
+#alert {
+    text-align:center;
+}
+
 .container {
-    /* box-shadow: inset 3px 3px 20px rgb(0 0 0 / 30%); */
+
     height:100vh;
     width:100vw;
     padding:50px;
     overflow:auto;
-    border-radius:1.5rem;
 }
 
 .container::-webkit-scrollbar{
@@ -44,19 +49,27 @@ textarea {
 }
 
 #email-body {
-    border-radius: 0px;
     height: 100%;
     overflow: auto;
 }
 
 #emails-view, #compose-view {
+    border-radius:5px;
     background: linear-gradient(to right, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.7));
     padding: 50px;
     box-shadow: 0.8rem 0.8rem 1.4rem var(--greyLight-2), -0.2rem -0.2rem 1.8rem var(--white);
 }
 
+#alert {
+    position:absolute;
+    width:100%;
+}
+
 h3{
+    background-color:rgba(0, 0, 0, 0.2);
+    text-align: center;
     padding:10px;
+    margin:auto;
 }
 
 tr{
